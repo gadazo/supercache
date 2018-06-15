@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cache.h>
 
 using std::FILE;
 using std::string;
@@ -60,6 +61,15 @@ int main(int argc, char **argv) {
 		}
 	}
 
+  Cache L1_cache(BSize , L1Size , L1Assoc);
+  Cache L2_cache(BSize , L2Size , L2Assoc);
+  unsigned lines_counter = 0;
+  unsigned total_time = 0;
+  unsigned L1Acc = 0;
+  unsigned L2Acc = 0;
+  unsigned L1Miss = 0;
+  unsigned L2Miss = 0;
+
 	while (getline(file, line)) {
 
 		stringstream ss(line);
@@ -81,15 +91,54 @@ int main(int argc, char **argv) {
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
+    lines_counter += 1;
 
 		// DEBUG - remove this line
 		cout << " (dec) " << num << endl;
 
-	}
+    //read Write proccess for each line:
+    bool in_L1 = L1_cache.readWriteCache(num);
+    total_time += L1Cyc;
+    L1Acc += 1;
+    if(in_L1){
+      L1_cache.updateDirty(num);
+      continue;
+    }
+    L1Miss += 1;
+    bool in_L2 = L2_cache.readWriteCache(num);
+    total_time += L2Cyc ;
+    L2Acc += 1;
+    address_t removed_address = 0;
+    bool isDirty = false;
+    if(in_L2){
+      if ((operation = 'r') || (WrAlloc)){
+        bool isRemoved = L1_cache.add2Cache(isDirty , removed_address , num);
+        if (isRemoved && isDirty)
+          L2_cache.updateLRU(removed_address);
+        if (operation = 'w')
+          L1_cache.updateDirty(num);
+      }
+    }
+    else{
+      total_time += MemCyc;
+      L2Miss += 1;
+      if ((operation = 'r') || (WrAlloc)){
+        bool isRemoved = L2_cache.add2Cache(isDirty , removed_address , num);
+        if(isRemoved)
+          L1_cache.removeCache(removed_address);
+        isRemoved = L1_cache.add2Cache(isDirty , removed_address , num);
+        if (isRemoved && isDirty)
+          L2_cache.updateLRU(removed_address);
+        if (operation = 'w')
+          L1_cache.updateDirty(num);
+      }
+    }
+  }
+}
 
-	double L1MissRate;
-	double L2MissRate;
-	double avgAccTime;
+	double L1MissRate = L1Miss/L1Acc;
+  double L2MissRate = L2Miss/L2Acc;
+	double avgAccTime = total_time / lines_counter;
 
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);
@@ -97,3 +146,6 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
+
+
+L
