@@ -77,31 +77,28 @@ int main(int argc, char **argv) {
 		char operation = 0; // read (R) or write (W)
 		if (!(ss >> operation >> address)) {
 			// Operation appears in an Invalid format
-			cout << "Command Format error" << endl;
 			return 0;
 		}
 
 		// DEBUG - remove this line
-		cout << "operation: " << operation;
 
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 
 		// DEBUG - remove this line
-		cout << ", address (hex)" << cutAddress;
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
     lines_counter += 1;
 
 		// DEBUG - remove this line
-		cout << " (dec) " << num << endl;
 
     //read Write proccess for each line:
     bool in_L1 = L1_cache.readWriteCache(num);
     total_time += L1Cyc;
     L1Acc += 1;
     if(in_L1){
-      L1_cache.updateDirty(num);
+      if(operation == 'w')
+        L1_cache.updateDirty(num);
       continue;
     }
     L1Miss += 1;
