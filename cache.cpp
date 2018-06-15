@@ -2,10 +2,10 @@
 #include "cache.h"
 #include <vector>
 
-using namespace std
+using namespace std;
 
 bool Cache :: readWriteCache(address_t address){
-  int set_num = ((address/pow(2,offset_bit_size)) & (pow(2,set_bit_size)-1));
+  int set_num = ((address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
   int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
   for (unsigned i = 0; i< num_of_ways ; i++){
     if((ways_array[i][set_num].tag = tag_num) && (ways_array[i][set_num].valid)){
@@ -13,10 +13,12 @@ bool Cache :: readWriteCache(address_t address){
       return true;
     }
   }
+  return false ;
 }
+
 bool Cache :: add2Cache(bool& isDirty , address_t& removed_address , address_t added_address){
-  int set_num = ((address/pow(2,offset_bit_size)) & (pow(2,set_bit_size)-1));
-  int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
+  int set_num = ((added_address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
+  int tag_num =  added_address/pow(2,offset_bit_size + set_bit_size);
   int way_num = -1;
   bool isRemoved = false;
   //check if there is an empty way (for the exact set)
@@ -42,20 +44,20 @@ bool Cache :: add2Cache(bool& isDirty , address_t& removed_address , address_t a
 }
 
 void Cache :: removeCache (address_t address){
-  int set_num = ((address/pow(2,offset_bit_size)) & (pow(2,set_bit_size)-1));
+  int set_num = ((address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
   int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
   for (unsigned i = 0; i< num_of_ways ; i++){
     if((ways_array[i][set_num].tag = tag_num) && (ways_array[i][set_num].valid)){
       ways_array[i][set_num].valid = false;
-      for (vector<int>::iterator it = lru_array[set_num].begin() ; it != lru_array[set_num].end() ; ++it;){
-        if (*it == i)
+      for (vector<int>::iterator it = lru_array[set_num].begin() ; it != lru_array[set_num].end() ; ++it){
+        if (*it == (int)i)
           lru_array[set_num].erase(it);
       }
     }
   }
 }
 void Cache :: updateDirty (address_t address){
-  int set_num = ((address/pow(2,offset_bit_size)) & (pow(2,set_bit_size)-1));
+  int set_num = ((address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
   int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
   for (unsigned i = 0; i< num_of_ways ; i++){
     if((ways_array[i][set_num].tag = tag_num) && (ways_array[i][set_num].valid)){
@@ -65,7 +67,7 @@ void Cache :: updateDirty (address_t address){
 }
 
 void Cache :: updateLRU (address_t address){
-  int set_num = ((address/pow(2,offset_bit_size)) & (pow(2,set_bit_size)-1));
+  int set_num = ((address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
   int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
   for (unsigned i = 0; i< num_of_ways ; i++){
     if((ways_array[i][set_num].tag = tag_num) && (ways_array[i][set_num].valid)){
@@ -76,7 +78,7 @@ void Cache :: updateLRU (address_t address){
 
 void Cache :: updateLRU (int way_num , int set_num){
   // remove the the way from the vector (if exsited)
-  for (vector<int>::iterator it = lru_array[set_num].begin() ; it != lru_array[set_num].end() ; ++it;){
+  for (vector<int>::iterator it = lru_array[set_num].begin() ; it != lru_array[set_num].end() ; ++it){
     if (*it == way_num)
       lru_array[set_num].erase(it);
   }

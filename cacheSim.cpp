@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <cache.h>
+#include "cache.h"
 
 using std::FILE;
 using std::string;
@@ -111,30 +111,29 @@ int main(int argc, char **argv) {
     address_t removed_address = 0;
     bool isDirty = false;
     if(in_L2){
-      if ((operation = 'r') || (WrAlloc)){
+      if ((operation == 'r') || (WrAlloc)){
         bool isRemoved = L1_cache.add2Cache(isDirty , removed_address , num);
         if (isRemoved && isDirty)
           L2_cache.updateLRU(removed_address);
-        if (operation = 'w')
+        if (operation == 'w')
           L1_cache.updateDirty(num);
       }
     }
     else{
       total_time += MemCyc;
       L2Miss += 1;
-      if ((operation = 'r') || (WrAlloc)){
+      if ((operation == 'r') || (WrAlloc)){
         bool isRemoved = L2_cache.add2Cache(isDirty , removed_address , num);
         if(isRemoved)
           L1_cache.removeCache(removed_address);
         isRemoved = L1_cache.add2Cache(isDirty , removed_address , num);
         if (isRemoved && isDirty)
           L2_cache.updateLRU(removed_address);
-        if (operation = 'w')
+        if (operation == 'w')
           L1_cache.updateDirty(num);
       }
     }
   }
-}
 
 	double L1MissRate = L1Miss/L1Acc;
   double L2MissRate = L2Miss/L2Acc;
@@ -146,6 +145,3 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
-
-
-L

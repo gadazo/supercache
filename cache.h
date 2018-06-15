@@ -1,4 +1,4 @@
-
+#include <cstdint>
 #include <vector>
 #include <math.h>
 using namespace std;
@@ -16,7 +16,7 @@ struct cache_line{
 class Cache{
 public:
   unsigned offset_bit_size;
-  umsigend set_bit_size;
+  unsigned set_bit_size;
   unsigned tag_bit_size;
   unsigned num_of_ways;
   unsigned num_of_lines;
@@ -24,13 +24,13 @@ public:
   vector <int>* lru_array;
   Cache(unsigned BSize , unsigned LSize, unsigned LAssoc): offset_bit_size(BSize), set_bit_size(LSize-BSize-LAssoc), tag_bit_size(32-set_bit_size-offset_bit_size), num_of_ways(pow(2,LAssoc)) ,num_of_lines(pow(2,set_bit_size)) {
     ways_array = new cache_line* [num_of_ways];
-    for (int i=0 ; i< num_of_ways ; i++){
+    for (unsigned i=0 ; i< num_of_ways ; i++){
       ways_array[i] = new cache_line [num_of_lines];
     }
     lru_array = new vector<int> [num_of_lines];
   }
   ~Cache(){
-      for (int i=0 ; i< num_of_ways ; i++){
+      for (unsigned i=0 ; i< num_of_ways ; i++){
         delete[] ways_array[i];
       }
       delete[] ways_array;
