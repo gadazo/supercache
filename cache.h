@@ -26,6 +26,9 @@ public:
     ways_array = new cache_line* [num_of_ways];
     for (unsigned i=0 ; i< num_of_ways ; i++){
       ways_array[i] = new cache_line [num_of_lines];
+      for(unsigned j = 0 ; j < num_of_lines ; j++){
+        ways_array[i][j].valid = false;
+      }
     }
     lru_array = new vector<int> [num_of_lines];
   }

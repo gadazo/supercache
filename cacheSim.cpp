@@ -63,12 +63,12 @@ int main(int argc, char **argv) {
 
   Cache L1_cache(BSize , L1Size , L1Assoc);
   Cache L2_cache(BSize , L2Size , L2Assoc);
-  unsigned lines_counter = 0;
-  unsigned total_time = 0;
-  unsigned L1Acc = 0;
-  unsigned L2Acc = 0;
-  unsigned L1Miss = 0;
-  unsigned L2Miss = 0;
+  double lines_counter = 0;
+  double total_time = 0;
+  double L1Acc = 0;
+  double L2Acc = 0;
+  double L1Miss = 0;
+  double L2Miss = 0;
 
 	while (getline(file, line)) {
 
@@ -135,8 +135,8 @@ int main(int argc, char **argv) {
     }
   }
 
-	double L1MissRate = L1Miss/L1Acc;
-  double L2MissRate = L2Miss/L2Acc;
+  double L1MissRate = L1Miss / L1Acc;
+  double L2MissRate = L2Miss / L2Acc;
 	double avgAccTime = total_time / lines_counter;
 
 	printf("L1miss=%.03f ", L1MissRate);

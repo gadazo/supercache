@@ -1,14 +1,15 @@
 #include <math.h>
 #include "cache.h"
 #include <vector>
-
+#include <iostream>
 using namespace std;
 
 bool Cache :: readWriteCache(address_t address){
   int set_num = ((address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
   int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
   for (unsigned i = 0; i< num_of_ways ; i++){
-    if((ways_array[i][set_num].tag = tag_num) && (ways_array[i][set_num].valid)){
+    if((ways_array[i][set_num].valid) && (ways_array[i][set_num].tag == tag_num)){
+      // if exist
       updateLRU(i , set_num);
       return true;
     }
@@ -47,11 +48,13 @@ void Cache :: removeCache (address_t address){
   int set_num = ((address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
   int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
   for (unsigned i = 0; i< num_of_ways ; i++){
-    if((ways_array[i][set_num].tag = tag_num) && (ways_array[i][set_num].valid)){
+    if((ways_array[i][set_num].valid) && (ways_array[i][set_num].tag == tag_num)){
       ways_array[i][set_num].valid = false;
       for (vector<int>::iterator it = lru_array[set_num].begin() ; it != lru_array[set_num].end() ; ++it){
-        if (*it == (int)i)
+        if (*it == (int)i){
           lru_array[set_num].erase(it);
+          break;
+        }
       }
     }
   }
@@ -60,7 +63,7 @@ void Cache :: updateDirty (address_t address){
   int set_num = ((address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
   int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
   for (unsigned i = 0; i< num_of_ways ; i++){
-    if((ways_array[i][set_num].tag = tag_num) && (ways_array[i][set_num].valid)){
+    if((ways_array[i][set_num].valid) && (ways_array[i][set_num].tag == tag_num)){
       ways_array[i][set_num].isDirty = true;
     }
   }
@@ -70,7 +73,7 @@ void Cache :: updateLRU (address_t address){
   int set_num = ((address/(int)pow(2,offset_bit_size)) & ((int)pow(2,set_bit_size)-1));
   int tag_num =  address/pow(2,offset_bit_size + set_bit_size);
   for (unsigned i = 0; i< num_of_ways ; i++){
-    if((ways_array[i][set_num].tag = tag_num) && (ways_array[i][set_num].valid)){
+    if( (ways_array[i][set_num].valid) && (ways_array[i][set_num].tag == tag_num)){
       updateLRU(i,set_num);
     }
   }
@@ -78,9 +81,13 @@ void Cache :: updateLRU (address_t address){
 
 void Cache :: updateLRU (int way_num , int set_num){
   // remove the the way from the vector (if exsited)
-  for (vector<int>::iterator it = lru_array[set_num].begin() ; it != lru_array[set_num].end() ; ++it){
-    if (*it == way_num)
-      lru_array[set_num].erase(it);
+  if(!lru_array[set_num].empty()){
+    for (vector<int>::iterator it = lru_array[set_num].begin() ; it != lru_array[set_num].end() ; ++it){
+      if (*it == way_num){
+        lru_array[set_num].erase(it);
+        break;
+      }
+    }
   }
   // insert the way to the front of the vector
   lru_array[set_num].insert(lru_array[set_num].begin() , way_num);
