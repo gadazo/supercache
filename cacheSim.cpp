@@ -33,42 +33,51 @@ int main(int argc, char **argv) {
 	}
 
 	unsigned MemCyc = 0, BSize = 0, L1Size = 0, L2Size = 0, L1Assoc = 0,
-			L2Assoc = 0, L1Cyc = 0, L2Cyc = 0, WrAlloc = 0;
+		L2Assoc = 0, L1Cyc = 0, L2Cyc = 0, WrAlloc = 0;
 
 	for (int i = 2; i < 19; i += 2) {
 		string s(argv[i]);
 		if (s == "--mem-cyc") {
 			MemCyc = atoi(argv[i + 1]);
-		} else if (s == "--bsize") {
+		}
+		else if (s == "--bsize") {
 			BSize = atoi(argv[i + 1]);
-		} else if (s == "--l1-size") {
+		}
+		else if (s == "--l1-size") {
 			L1Size = atoi(argv[i + 1]);
-		} else if (s == "--l2-size") {
+		}
+		else if (s == "--l2-size") {
 			L2Size = atoi(argv[i + 1]);
-		} else if (s == "--l1-cyc") {
+		}
+		else if (s == "--l1-cyc") {
 			L1Cyc = atoi(argv[i + 1]);
-		} else if (s == "--l2-cyc") {
+		}
+		else if (s == "--l2-cyc") {
 			L2Cyc = atoi(argv[i + 1]);
-		} else if (s == "--l1-assoc") {
+		}
+		else if (s == "--l1-assoc") {
 			L1Assoc = atoi(argv[i + 1]);
-		} else if (s == "--l2-assoc") {
+		}
+		else if (s == "--l2-assoc") {
 			L2Assoc = atoi(argv[i + 1]);
-		} else if (s == "--wr-alloc") {
+		}
+		else if (s == "--wr-alloc") {
 			WrAlloc = atoi(argv[i + 1]);
-		} else {
+		}
+		else {
 			cerr << "Error in arguments" << endl;
 			return 0;
 		}
 	}
 
-  Cache L1_cache(BSize , L1Size , L1Assoc);
-  Cache L2_cache(BSize , L2Size , L2Assoc);
-  double lines_counter = 0;
-  double total_time = 0;
-  double L1Acc = 0;
-  double L2Acc = 0;
-  double L1Miss = 0;
-  double L2Miss = 0;
+	Cache L1_cache(BSize, L1Size, L1Assoc);
+	Cache L2_cache(BSize, L2Size, L2Assoc);
+	double lines_counter = 0;
+	double total_time = 0;
+	double L1Acc = 0;
+	double L2Acc = 0;
+	double L1Miss = 0;
+	double L2Miss = 0;
 
 	while (getline(file, line)) {
 
@@ -80,60 +89,60 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 
-		// DEBUG - remove this line
-
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
-
-		// DEBUG - remove this line
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
-    lines_counter += 1;
+		lines_counter += 1;
 
-		// DEBUG - remove this line
+		//read Write proccess for each line:
+		bool in_L1 = L1_cache.readWriteCache(num);
+		total_time += L1Cyc;
+		L1Acc += 1;
+		// first check if in L1 cache
+		if (in_L1) {
+			//if in , in Write change to Dirty
+			if (operation == 'w')
+				L1_cache.updateDirty(num);
+			continue;
+		}
+		//if not in L2 adds penalty and check if in L2
+		L1Miss += 1;
+		bool in_L2 = L2_cache.readWriteCache(num);
+		total_time += L2Cyc;
+		L2Acc += 1;
+		address_t removed_address = 0;
+		bool isDirty = false;
+		if (in_L2) {
+			//if in L2 and Read or WrAlloc is on bring the data to L1
+			if ((operation == 'r') || (WrAlloc)) {
+				bool isRemoved = L1_cache.add2Cache(isDirty, removed_address, num);
+				if (isRemoved && isDirty)
+					//if the data was removed from L1 and was Dirty - updates L2 LRU
+					L2_cache.updateLRU(removed_address);
+				if (operation == 'w')
+					L1_cache.updateDirty(num);
+			}
+		}
+		else {
+			//if L2 Miss adds penalty and bring the data to L2 and L1 cache (WRalloc or Read)
+			total_time += MemCyc;
+			L2Miss += 1;
+			if ((operation == 'r') || (WrAlloc)) {
+				bool isRemoved = L2_cache.add2Cache(isDirty, removed_address, num);
+				if (isRemoved)
+					L1_cache.removeCache(removed_address);
+				isRemoved = L1_cache.add2Cache(isDirty, removed_address, num);
+				if (isRemoved && isDirty)
+					L2_cache.updateLRU(removed_address);
+				if (operation == 'w')
+					L1_cache.updateDirty(num);
+			}
+		}
+	}
 
-    //read Write proccess for each line:
-    bool in_L1 = L1_cache.readWriteCache(num);
-    total_time += L1Cyc;
-    L1Acc += 1;
-    if(in_L1){
-      if(operation == 'w')
-        L1_cache.updateDirty(num);
-      continue;
-    }
-    L1Miss += 1;
-    bool in_L2 = L2_cache.readWriteCache(num);
-    total_time += L2Cyc ;
-    L2Acc += 1;
-    address_t removed_address = 0;
-    bool isDirty = false;
-    if(in_L2){
-      if ((operation == 'r') || (WrAlloc)){
-        bool isRemoved = L1_cache.add2Cache(isDirty , removed_address , num);
-        if (isRemoved && isDirty)
-          L2_cache.updateLRU(removed_address);
-        if (operation == 'w')
-          L1_cache.updateDirty(num);
-      }
-    }
-    else{
-      total_time += MemCyc;
-      L2Miss += 1;
-      if ((operation == 'r') || (WrAlloc)){
-        bool isRemoved = L2_cache.add2Cache(isDirty , removed_address , num);
-        if(isRemoved)
-          L1_cache.removeCache(removed_address);
-        isRemoved = L1_cache.add2Cache(isDirty , removed_address , num);
-        if (isRemoved && isDirty)
-          L2_cache.updateLRU(removed_address);
-        if (operation == 'w')
-          L1_cache.updateDirty(num);
-      }
-    }
-  }
-
-  double L1MissRate = L1Miss / L1Acc;
-  double L2MissRate = L2Miss / L2Acc;
+	double L1MissRate = L1Miss / L1Acc;
+	double L2MissRate = L2Miss / L2Acc;
 	double avgAccTime = total_time / lines_counter;
 
 	printf("L1miss=%.03f ", L1MissRate);
